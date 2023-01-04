@@ -35,6 +35,7 @@ The Hessian is accessed as an abstract operator and need not be the exact Hessia
 * `subsolver_logger::AbstractLogger`: a logger to pass to the subproblem solver (default: the null logger)
 * `subsolver`: the procedure used to compute a step (`PG` or `R2`)
 * `subsolver_options::ROSolverOptions`: default options to pass to the subsolver (default: all defaut options).
+* `selected::AbstractVector{<:Integer}`: (default `1:f.meta.nvar`),
 
 ### Return values
 
@@ -52,6 +53,7 @@ function TR(
   subsolver_logger::Logging.AbstractLogger = Logging.NullLogger(),
   subsolver = R2,
   subsolver_options = ROSolverOptions(),
+  selected::AbstractVector{<:Integer} = 1:f.meta.nvar,
 ) where {H, X}
   start_time = time()
   elapsed_time = 0.0
@@ -68,7 +70,6 @@ function TR(
   α = options.α
   θ = options.θ
   β = options.β
-  selected = f.selected
 
   local l_bound, u_bound
   if has_bounds(f)
