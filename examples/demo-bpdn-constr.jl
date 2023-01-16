@@ -8,6 +8,11 @@ Random.seed!(1234)
 
 function demo_solver(f, sol, h, χ, suffix = "l0-linf")
   options = ROSolverOptions(ν = 1.0, β = 1e16, ϵa = 1e-6, ϵr = 1e-6, verbose = 10)
+
+  @info "using R2 to solve with" h
+  reset!(f)
+  R2_out = R2(f, h, options, x0 = f.meta.x0)
+
   @info " using TR to solve with" h χ
   reset!(f)
   TR_out = TR(f, h, χ, options, x0 = f.meta.x0)
