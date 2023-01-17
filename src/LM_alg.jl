@@ -41,11 +41,12 @@ function LM(
   nls::AbstractNLSModel,
   h::H,
   options::ROSolverOptions;
-  x0::AbstractVector = nls.meta.x0,
+  x0::AbstractVector{T} = nls.meta.x0,
   subsolver_logger::Logging.AbstractLogger = Logging.NullLogger(),
   subsolver = R2,
   subsolver_options = ROSolverOptions(),
-) where {H}
+  selected::AbstractVector{<:Integer} = 1:nls.meta.nvar,
+) where {T, H}
   start_time = time()
   elapsed_time = 0.0
   # initialize passed options
@@ -60,6 +61,12 @@ function LM(
   θ = options.θ
   σmin = options.σmin
 
+  local l_bound, u_bound
+  if has_bounds(nls)
+    l_bound = nls.meta.lvar
+    u_bound = nls.meta.uvar
+  end
+
   if verbose == 0
     ptf = Inf
   elseif verbose == 1
@@ -73,16 +80,17 @@ function LM(
   # initialize parameters
   σk = max(1 / options.ν, σmin)
   xk = copy(x0)
-  hk = h(xk)
+  hk = h(xk[selected])
   if hk == Inf
     verbose > 0 && @info "LM: finding initial guess where nonsmooth term is finite"
     prox!(xk, h, x0, one(eltype(x0)))
-    hk = h(xk)
+    hk = h(xk[selected])
     hk < Inf || error("prox computation must be erroneous")
     verbose > 0 && @debug "LM: found point where h has value" hk
   end
   hk == -Inf && error("nonsmooth term is not proper")
-  ψ = shifted(h, xk)
+  ψ = has_bounds(nls) ? shifted(h, xk, l_bound - xk, u_bound - xk, one(T), selected) :
+    shifted(h, xk)
 
   xkn = similar(xk)
 
@@ -212,6 +220,7 @@ function LM(
       hk = hkn
 
       # update gradient & Hessian
+      has_bounds(nls) && set_bounds!(ψ, l_bound - xk, u_bound - xk)
       shift!(ψ, xk)
       Jk = jac_op_residual(nls, xk)
       jtprod_residual!(nls, xk, Fk, ∇fk)
