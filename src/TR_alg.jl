@@ -102,7 +102,7 @@ function TR(
   xkn = similar(xk)
   s = zero(xk)
   ψ =
-    has_bounds(f) ? shifted(h, xk, max.(-Δk, l_bound - xk), min.(Δk, u_bound - xk), Δk, selected) :
+    has_bounds(f) ? shifted(h, xk, max.(-Δk, l_bound - xk), min.(Δk, u_bound - xk), selected) :
     shifted(h, xk, Δk, χ)
 
   Fobj_hist = zeros(maxIter)
@@ -169,8 +169,8 @@ function TR(
     end
 
     subsolver_options.ϵa = k == 1 ? 1.0e-5 : max(ϵ, min(1e-2, sqrt(ξ1)) * ξ1)
-    set_radius!(ψ, min(β * χ(s), Δk))
-    has_bounds(f) && set_bounds!(ψ, max.(-ψ.Δ, l_bound - xk), min.(ψ.Δ, u_bound - xk))
+    Δk = min(β * χ(s), Δk)
+    has_bounds(f) ? set_bounds!(ψ, max.(-Δk, l_bound - xk), min.(Δk, u_bound - xk)) : set_radius!(ψ, Δk)
     s, iter, _ = with_logger(subsolver_logger) do
       subsolver(φ, ∇φ!, ψ, subsolver_options, s)
     end
@@ -195,18 +195,17 @@ function TR(
 
     if (verbose > 0) && (k % ptf == 0)
       #! format: off
-      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k iter fk hk sqrt(ξ1) sqrt(ξ) ρk ψ.Δ χ(xk) sNorm νInv TR_stat
+      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k iter fk hk sqrt(ξ1) sqrt(ξ) ρk Δk χ(xk) sNorm νInv TR_stat
       #! format: on
     end
 
     if η2 ≤ ρk < Inf
       Δk = max(Δk, γ * sNorm)
-      set_radius!(ψ, Δk)
     end
 
     if η1 ≤ ρk < Inf
       xk .= xkn
-      has_bounds(f) && set_bounds!(ψ, max.(-Δk, l_bound - xk), min.(Δk, u_bound - xk))
+      has_bounds(f) ? set_bounds!(ψ, max.(-Δk, l_bound - xk), min.(Δk, u_bound - xk)) : set_radius!(ψ, Δk)
       #update functions
       fk = fkn
       hk = hkn
@@ -224,8 +223,7 @@ function TR(
 
     if ρk < η1 || ρk == Inf
       Δk = Δk / 2
-      set_radius!(ψ, Δk)
-      has_bounds(f) && set_bounds!(ψ, max.(-Δk, l_bound - xk), min.(Δk, u_bound - xk))
+      has_bounds(f) ? set_bounds!(ψ, max.(-Δk, l_bound - xk), min.(Δk, u_bound - xk)) : set_radius!(ψ, Δk)
     end
     tired = k ≥ maxIter || elapsed_time > maxTime
   end
@@ -235,7 +233,7 @@ function TR(
       @info @sprintf "%6d %8s %8.1e %8.1e" k "" fk hk
     elseif optimal
       #! format: off
-      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k 1 fk hk sqrt(ξ1) sqrt(ξ1) "" ψ.Δ χ(xk) χ(s) νInv
+      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k 1 fk hk sqrt(ξ1) sqrt(ξ1) "" Δk χ(xk) χ(s) νInv
       #! format: on
       @info "TR: terminating with √ξ1 = $(sqrt(ξ1))"
     end

@@ -89,8 +89,7 @@ function LM(
     verbose > 0 && @debug "LM: found point where h has value" hk
   end
   hk == -Inf && error("nonsmooth term is not proper")
-  ψ = has_bounds(nls) ? shifted(h, xk, l_bound - xk, u_bound - xk, one(T), selected) :
-    shifted(h, xk)
+  ψ = has_bounds(nls) ? shifted(h, xk, l_bound - xk, u_bound - xk, selected) : shifted(h, xk)
 
   xkn = similar(xk)
 

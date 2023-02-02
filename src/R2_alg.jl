@@ -130,7 +130,7 @@ function R2(
 
   xkn = similar(xk)
   s = zero(xk)
-  ψ = has_bnds ? shifted(h, xk, l_bound - xk, u_bound - xk, one(R), selected) : shifted(h, xk)
+  ψ = has_bnds ? shifted(h, xk, l_bound - xk, u_bound - xk, selected) : shifted(h, xk)
 
   Fobj_hist = zeros(maxIter)
   Hobj_hist = zeros(maxIter)

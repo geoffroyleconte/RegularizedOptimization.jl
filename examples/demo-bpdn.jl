@@ -34,10 +34,10 @@ function demo_bpdn(compound = 1)
   f = LSR1Model(model)
 
   λ = norm(grad(model, zeros(model.meta.nvar)), Inf) / 10
-  # demo_solver(f, sol, NormL0(λ), NormLinf(1.0))
+  demo_solver(f, nls_model, sol, NormL0(λ), NormLinf(1.0))
 
   k = 10 * compound
-  # demo_solver(f, nls_model, sol, IndBallL0(10 * compound), NormLinf(1.0), "b0-linf")
+  demo_solver(f, nls_model, sol, IndBallL0(10 * compound), NormLinf(1.0), "b0-linf")
 
   demo_solver(f, nls_model, sol, NormL1(λ), NormL2(1.0), "l1-l2")
 
