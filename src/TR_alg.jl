@@ -129,9 +129,9 @@ function TR(
   ∇fk⁻ = copy(∇fk)
 
   quasiNewtTest = isa(f, QuasiNewtonModel)
-  Bk = hess_op(f, xk)
+  Bk = Diagonal([1.0])#hess_op(f, xk)
 
-  λmax = opnorm(Bk)
+  λmax = 1.0#opnorm(Bk)
   νInv = (1 + θ) * λmax
 
   optimal = false
@@ -165,13 +165,14 @@ function TR(
     ξ1 = hk - mk1(s) + max(1, abs(hk)) * 10 * eps()
     ξ1 > 0 || error("TR: first prox-gradient step should produce a decrease but ξ1 = $(ξ1)")
 
-    if ξ1 ≥ 0 && k == 1
-      ϵ_increment = ϵr * sqrt(ξ1)
-      ϵ += ϵ_increment  # make stopping test absolute and relative
-      ϵ_subsolver += ϵ_increment
-    end
+    # if ξ1 ≥ 0 && k == 1
+    #   ϵ_increment = ϵr * sqrt(ξ1)
+    #   ϵ += ϵ_increment  # make stopping test absolute and relative
+    #   ϵ_subsolver += ϵ_increment
+    # end
 
-    if sqrt(ξ1) < ϵ
+    println(" νinv * sqrt ξ1 = ", sqrt(ξ1) / subsolver_options.ν, "  xk = ", xk)
+    if sqrt(ξ1) / subsolver_options.ν < ϵ + 100 * eps()
       # the current xk is approximately first-order stationary
       optimal = true
       continue
@@ -219,7 +220,8 @@ function TR(
     end
 
     if η2 ≤ ρk < Inf
-      Δk = max(Δk, γ * sNorm)
+      # Δk = max(Δk, γ * sNorm)
+      Δk = γ * Δk
       !(has_bounds(f) || subsolver == TRDH) && set_radius!(ψ, Δk)
     end
 
@@ -237,8 +239,8 @@ function TR(
       if quasiNewtTest
         push!(f, s, ∇fk - ∇fk⁻)
       end
-      Bk = hess_op(f, xk)
-      λmax = opnorm(Bk)
+      Bk.diag .= k^(1/10) #hess_op(f, xk)
+      λmax = k^(1/10) #opnorm(Bk)
       νInv = (1 + θ) * λmax
       ∇fk⁻ .= ∇fk
     end

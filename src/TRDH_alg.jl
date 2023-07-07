@@ -205,9 +205,10 @@ function TRDH(
   ∇fk⁻ = copy(∇fk)
   Dk = spectral ? SpectralGradient(hess_init_val, length(xk)) :
     ((Bk isa UniformScaling) ? DiagonalQN(fill!(similar(xk), hess_init_val), psb) : DiagonalQN(diag(Bk), psb))
+  Dk.d .= 1.0
   DkNorm = norm(Dk.d, Inf)
-  νInv = (DkNorm + one(R) / (α * Δk))
-  ν = one(R) / νInv
+  # νInv = (DkNorm + one(R) / (α * Δk))
+  ν = options.ν # one(R) / νInv
   mν∇fk = -ν .* ∇fk
 
   optimal = false
@@ -226,13 +227,13 @@ function TRDH(
     if reduce_TR
       prox!(s, ψ, mν∇fk, ν)
       Complex_hist[k] += 1
-      ξ1 = hk - mk1(s) + max(1, abs(hk)) * 10 * eps()
+      ξ1 = hk - mk1(s) #+ max(1, abs(hk)) * 10 * eps()
 
-      if ξ1 ≥ 0 && k == 1
-        ϵ += ϵr * sqrt(ξ1)  # make stopping test absolute and relative
-      end
-
-      if (ξ1 < 0 && sqrt(-ξ1) ≤ neg_tol) || (ξ1 ≥ 0 && sqrt(ξ1) < ϵ)
+      # if ξ1 ≥ 0 && k == 1
+      #   ϵ += ϵr * sqrt(ξ1)  # make stopping test absolute and relative
+      # end
+      println(" νinv * sqrt ξ1 = ", sqrt(ξ1) / ν, "  xk = ", xk)
+      if (sqrt(ξ1) / ν < ϵ + 100 * eps()) #(ξ1 < 0 && sqrt(-ξ1) ≤ neg_tol) || (ξ1 ≥ 0 && sqrt(ξ1) < ϵ)
         # the current xk is approximately first-order stationary
         optimal = true
         continue
@@ -297,7 +298,8 @@ function TRDH(
     end
 
     if η2 ≤ ρk < Inf
-      Δk = max(Δk, γ * sNorm)
+      # Δk = max(Δk, γ * sNorm)
+      Δk = γ * Δk
       !has_bnds && set_radius!(ψ, Δk)
     end
 
@@ -310,7 +312,7 @@ function TRDH(
       hk = hkn
       shift!(ψ, xk)
       ∇f!(∇fk, xk)
-      push!(Dk, s, ∇fk - ∇fk⁻) # update QN operator
+      Dk.d .= R(k^(1/10)) # push!(Dk, s, ∇fk - ∇fk⁻) # update QN operator
       DkNorm = norm(Dk.d, Inf)
       ∇fk⁻ .= ∇fk
     end
@@ -321,7 +323,7 @@ function TRDH(
       has_bnds ? set_bounds!(ψ, l_bound_k, u_bound_k) : set_radius!(ψ, Δk)
     end
 
-    νInv = (DkNorm + one(R) / (α * Δk))
+    νInv = (DkNorm * (1 + one(R) / (α * Δk)) + one(R) / (α * Δk))
     ν = one(R) / νInv
     mν∇fk .= -ν .* ∇fk
 
