@@ -232,8 +232,8 @@ function TRDH(
       # if ξ1 ≥ 0 && k == 1
       #   ϵ += ϵr * sqrt(ξ1)  # make stopping test absolute and relative
       # end
-      println(" νinv * sqrt ξ1 = ", sqrt(ξ1) / ν, "  xk = ", xk)
-      if (sqrt(ξ1) / ν < ϵ + 100 * eps()) #(ξ1 < 0 && sqrt(-ξ1) ≤ neg_tol) || (ξ1 ≥ 0 && sqrt(ξ1) < ϵ)
+      println(" νinv * sqrt ξ1 = ", sqrt(ξ1 / ν), "  xk = ", xk)
+      if (sqrt(ξ1 / ν) < ϵ + 100 * eps()) #(ξ1 < 0 && sqrt(-ξ1) ≤ neg_tol) || (ξ1 ≥ 0 && sqrt(ξ1) < ϵ)
         # the current xk is approximately first-order stationary
         optimal = true
         continue
