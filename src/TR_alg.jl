@@ -171,8 +171,8 @@ function TR(
     #   ϵ_subsolver += ϵ_increment
     # end
 
-    println(" νinv * sqrt ξ1 = ", sqrt(ξ1 / subsolver_options.ν), "  xk = ", xk)
-    if sqrt(ξ1 / subsolver_options.ν) < ϵ + 100 * eps()
+    println(" νinv * sqrt ξ1 = ", sqrt(ξ1 / ν), "  xk = ", xk)
+    if sqrt(ξ1 / ν) < ϵ + 100 * eps()
       # the current xk is approximately first-order stationary
       optimal = true
       continue
@@ -241,7 +241,7 @@ function TR(
       end
       Bk.diag .= k^(1/10) #hess_op(f, xk)
       λmax = k^(1/10) #opnorm(Bk)
-      νInv = (1 + θ) * λmax
+      νInv = λmax
       ∇fk⁻ .= ∇fk
     end
 
