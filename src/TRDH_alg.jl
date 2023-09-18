@@ -188,9 +188,9 @@ function TRDH(
   if verbose > 0
     #! format: off
     if reduce_TR
-      @info @sprintf "%6s %8s %8s %7s %7s %8s %7s %7s %7s %7s %1s" "outer" "f(x)" "h(x)" "√ξ1" "√ξ" "ρ" "Δ" "‖x‖" "‖s‖" "‖Dₖ‖" "TRDH"
+      @info @sprintf "%6s %8s %8s %7s %7s %8s %7s %7s %7s %7s %1s" "outer" "f(x)" "h(x)" "√ξ1/√ν" "√ξ" "ρ" "Δ" "‖x‖" "‖s‖" "‖Dₖ‖" "TRDH"
     else
-      @info @sprintf "%6s %8s %8s %7s %8s %7s %7s %7s %7s %1s" "outer" "f(x)" "h(x)" "√ξ" "ρ" "Δ" "‖x‖" "‖s‖" "‖Dₖ‖" "TRDH"
+      @info @sprintf "%6s %8s %8s %7s %8s %7s %7s %7s %7s %1s" "outer" "f(x)" "h(x)" "√ξ/√ν" "ρ" "Δ" "‖x‖" "‖s‖" "‖Dₖ‖" "TRDH"
     end
     #! format: off
   end
@@ -269,10 +269,10 @@ function TRDH(
 
     if !reduce_TR
       if ξ ≥ 0 && k == 1
-        ϵ += ϵr * sqrt(ξ)  # make stopping test absolute and relative
+        ϵ += ϵr * sqrt(ξ / ν)  # make stopping test absolute and relative
       end
 
-      if (ξ < 0 && sqrt(-ξ) ≤ neg_tol) || (ξ ≥ 0 && sqrt(ξ) < ϵ)
+      if (ξ < 0 && sqrt(-ξ / ν) ≤ neg_tol) || (ξ ≥ 0 && sqrt(ξ / ν) < ϵ)
         # the current xk is approximately first-order stationary
         optimal = true
         continue
@@ -290,9 +290,9 @@ function TRDH(
     if (verbose > 0) && (k % ptf == 0)
       #! format: off
       if reduce_TR
-        @info @sprintf "%6d %8.1e %8.1e %7.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k fk hk sqrt(ξ1) sqrt(ξ) ρk Δk χ(xk) sNorm norm(Dk.d) TR_stat
+        @info @sprintf "%6d %8.1e %8.1e %7.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k fk hk sqrt(ξ1 / ν) sqrt(ξ) ρk Δk χ(xk) sNorm norm(Dk.d) TR_stat
       else
-        @info @sprintf "%6d %8.1e %8.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k fk hk sqrt(ξ) ρk Δk χ(xk) sNorm norm(Dk.d) TR_stat
+        @info @sprintf "%6d %8.1e %8.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k fk hk sqrt(ξ / ν) ρk Δk χ(xk) sNorm norm(Dk.d) TR_stat
       end
       #! format: on
     end
@@ -336,14 +336,14 @@ function TRDH(
     elseif optimal
       #! format: off
       if reduce_TR
-        @info @sprintf "%6d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k fk hk sqrt(ξ1) sqrt(ξ1) "" Δk χ(xk) χ(s) norm(Dk.d)
+        @info @sprintf "%6d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k fk hk sqrt(ξ1 / ν) sqrt(ξ1) "" Δk χ(xk) χ(s) norm(Dk.d)
         #! format: on
-        @info "TRDH: terminating with √ξ1 = $(sqrt(ξ1))"
+        @info "TRDH: terminating with √ξ1/√ν = $(sqrt(ξ1 / ν))"
       else
-        @info @sprintf "%6d %8.1e %8.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k fk hk sqrt(ξ) "" Δk χ(
+        @info @sprintf "%6d %8.1e %8.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k fk hk sqrt(ξ / ν) "" Δk χ(
           xk,
         ) χ(s) norm(Dk.d)
-        @info "TRDH: terminating with √ξ = $(sqrt(ξ))"
+        @info "TRDH: terminating with √ξ/√ν = $(sqrt(ξ / ν))"
       end
     end
   end
@@ -367,7 +367,7 @@ function TRDH(
     :status => status,
     :fk => fk,
     :hk => hk,
-    :ξ => ξ1,
+    :ξ => ξ1 ≥ 0 ? sqrt(ξ1 / ν) : ξ1,
     :elapsed_time => elapsed_time,
   )
 

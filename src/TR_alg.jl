@@ -133,6 +133,7 @@ function TR(
 
   λmax = 1.0#opnorm(Bk)
   νInv = (1 + θ) * λmax
+  ν = 1 / (νInv + 1 / (Δk * α))
 
   optimal = false
   tired = k ≥ maxIter || elapsed_time > maxTime
@@ -172,13 +173,13 @@ function TR(
     # end
 
     println(" νinv * sqrt ξ1 = ", sqrt(ξ1 / ν), "  xk = ", xk)
-    if sqrt(ξ1 / ν) < ϵ + 100 * eps()
+    if sqrt(ξ1 / ν) < ϵ + sqrt(eps())
       # the current xk is approximately first-order stationary
       optimal = true
       continue
     end
 
-    subsolver_options.ϵa = k == 1 ? 1.0e-5 : max(ϵ_subsolver, min(1e-2, sqrt(ξ1)) * ξ1)
+    subsolver_options.ϵa = k == 1 ? 1.0e-5 : max(ϵ_subsolver, min(1e-2, sqrt(ξ1 / ν)))
     ∆_effective = min(β * χ(s), Δk)
     (has_bounds(f) || subsolver == TRDH) ?
     set_bounds!(ψ, max.(-∆_effective, l_bound - xk), min.(∆_effective, u_bound - xk)) :
@@ -215,7 +216,7 @@ function TR(
 
     if (verbose > 0) && (k % ptf == 0)
       #! format: off
-      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k iter fk hk sqrt(ξ1) sqrt(ξ) ρk ∆_effective χ(xk) sNorm νInv TR_stat
+      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k iter fk hk sqrt(ξ1 / ν) sqrt(ξ) ρk ∆_effective χ(xk) sNorm νInv TR_stat
       #! format: on
     end
 
@@ -258,9 +259,9 @@ function TR(
       @info @sprintf "%6d %8s %8.1e %8.1e" k "" fk hk
     elseif optimal
       #! format: off
-      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k 1 fk hk sqrt(ξ1) sqrt(ξ1) "" Δk χ(xk) χ(s) νInv
+      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k 1 fk hk sqrt(ξ1 / ν) sqrt(ξ1) "" Δk χ(xk) χ(s) νInv
       #! format: on
-      @info "TR: terminating with √ξ1 = $(sqrt(ξ1))"
+      @info "TR: terminating with √ξ1/√ν = $(sqrt(ξ1 / ν))"
     end
   end
 
