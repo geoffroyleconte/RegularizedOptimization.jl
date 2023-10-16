@@ -31,7 +31,7 @@ mutable struct ROSolverOptions{R}
     σmin::R = eps(R),
     η1::R = √√eps(R),
     η2::R = R(0.9),
-    α::R = 1 / eps(R),
+    α::R = R(1.0e14),
     ν::R = 1.0e-3,
     γ::R = R(3),
     θ::R = R(1e-3),

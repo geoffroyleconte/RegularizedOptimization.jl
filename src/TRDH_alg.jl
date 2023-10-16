@@ -206,8 +206,8 @@ function TRDH(
   Dk = spectral ? SpectralGradient(hess_init_val, length(xk)) :
     ((Bk isa UniformScaling) ? DiagonalQN(fill!(similar(xk), hess_init_val), psb) : DiagonalQN(diag(Bk), psb))
   DkNorm = norm(Dk.d, Inf)
-  νInv = (DkNorm + one(R) / (α * Δk))
-  ν = one(R) / νInv
+  α⁻¹Δk⁻¹ = 1 / (α * Δk)
+  ν = 1 / (α⁻¹Δk⁻¹ + (1 + α⁻¹Δk⁻¹) * DkNorm)
   mν∇fk = -ν .* ∇fk
   sqrt_ξ_νInv = one(R)
 
@@ -325,8 +325,9 @@ function TRDH(
       has_bnds ? set_bounds!(ψ, l_bound_k, u_bound_k) : set_radius!(ψ, Δk)
     end
 
-    νInv = reduce_TR ? (DkNorm + one(R) / (α * Δk)) : (DkNorm + one(R) / α)
-    ν = one(R) / νInv
+    α⁻¹Δk⁻¹ = 1 / (α * Δk)
+    # ν = 1 / (α⁻¹Δk⁻¹ + (1 + α⁻¹Δk⁻¹) * DkNorm)
+    ν = reduce_TR ? 1 / (α⁻¹Δk⁻¹ + (1 + α⁻¹Δk⁻¹) * DkNorm) : 1 / (1 / α + DkNorm)
     mν∇fk .= -ν .* ∇fk
 
     tired = k ≥ maxIter || elapsed_time > maxTime
