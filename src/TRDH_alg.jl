@@ -208,7 +208,8 @@ function TRDH(
   Dk.d .= 1.0
   DkNorm = norm(Dk.d, Inf)
   # νInv = (DkNorm + one(R) / (α * Δk))
-  ν = options.ν # one(R) / νInv
+  α⁻¹Δk⁻¹ = 1 / (α * Δk)
+  ν = 1 / (α⁻¹Δk⁻¹ + DkNorm * (1 + α⁻¹Δk⁻¹))
   mν∇fk = -ν .* ∇fk
 
   optimal = false
@@ -323,8 +324,8 @@ function TRDH(
       has_bnds ? set_bounds!(ψ, l_bound_k, u_bound_k) : set_radius!(ψ, Δk)
     end
 
-    νInv = (DkNorm * (1 + one(R) / (α * Δk)) + one(R) / (α * Δk))
-    ν = one(R) / νInv
+    α⁻¹Δk⁻¹ = 1 / (α * Δk)
+    ν = 1 / (α⁻¹Δk⁻¹ + DkNorm * (1 + α⁻¹Δk⁻¹))
     mν∇fk .= -ν .* ∇fk
 
     tired = k ≥ maxIter || elapsed_time > maxTime

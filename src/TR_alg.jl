@@ -132,8 +132,8 @@ function TR(
   Bk = Diagonal([1.0])#hess_op(f, xk)
 
   λmax = 1.0#opnorm(Bk)
-  νInv = (1 + θ) * λmax
-  ν = 1 / (νInv + 1 / (Δk * α))
+  α⁻¹Δk⁻¹ = 1 / (Δk * α)
+  ν = 1 / (α⁻¹Δk⁻¹ + λmax * (1 + α⁻¹Δk⁻¹))
 
   optimal = false
   tired = k ≥ maxIter || elapsed_time > maxTime
@@ -161,7 +161,8 @@ function TR(
 
     # Take first proximal gradient step s1 and see if current xk is nearly stationary.
     # s1 minimizes φ1(s) + ‖s‖² / 2 / ν + ψ(s) ⟺ s1 ∈ prox{νψ}(-ν∇φ1(0)).
-    ν = 1 / (νInv + 1 / (Δk * α))
+    α⁻¹Δk⁻¹ = 1 / (Δk * α)
+    ν = 1 / (α⁻¹Δk⁻¹ + λmax * (1 + α⁻¹Δk⁻¹))
     prox!(s, ψ, -ν * ∇fk, ν)
     ξ1 = hk - mk1(s) + max(1, abs(hk)) * 10 * eps()
     ξ1 > 0 || error("TR: first prox-gradient step should produce a decrease but ξ1 = $(ξ1)")
@@ -216,7 +217,7 @@ function TR(
 
     if (verbose > 0) && (k % ptf == 0)
       #! format: off
-      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k iter fk hk sqrt(ξ1 / ν) sqrt(ξ) ρk ∆_effective χ(xk) sNorm νInv TR_stat
+      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k iter fk hk sqrt(ξ1 / ν) sqrt(ξ) ρk ∆_effective χ(xk) sNorm λmax TR_stat
       #! format: on
     end
 
@@ -242,7 +243,6 @@ function TR(
       end
       Bk.diag .= k^(1/10) #hess_op(f, xk)
       λmax = k^(1/10) #opnorm(Bk)
-      νInv = λmax
       ∇fk⁻ .= ∇fk
     end
 
@@ -259,7 +259,7 @@ function TR(
       @info @sprintf "%6d %8s %8.1e %8.1e" k "" fk hk
     elseif optimal
       #! format: off
-      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k 1 fk hk sqrt(ξ1 / ν) sqrt(ξ1) "" Δk χ(xk) χ(s) νInv
+      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k 1 fk hk sqrt(ξ1 / ν) sqrt(ξ1) "" Δk χ(xk) χ(s) λmax
       #! format: on
       @info "TR: terminating with √ξ1/√ν = $(sqrt(ξ1 / ν))"
     end
