@@ -173,7 +173,6 @@ function TR(
     #   ϵ_subsolver += ϵ_increment
     # end
 
-    println(" νinv * sqrt ξ1 = ", sqrt(ξ1 / ν), "  xk = ", xk)
     if sqrt(ξ1 / ν) < ϵ + sqrt(eps())
       # the current xk is approximately first-order stationary
       optimal = true
