@@ -23,7 +23,7 @@ mutable struct ROSolverOptions{R}
   function ROSolverOptions{R}(;
     ϵa::R = √eps(R),
     ϵr::R = √eps(R),
-    neg_tol::R = eps(R)^(1 / 3),
+    neg_tol::R = eps(R)^(1 / R(3)),
     Δk::R = one(R),
     verbose::Int = 0,
     maxIter::Int = 10000,
@@ -32,7 +32,7 @@ mutable struct ROSolverOptions{R}
     η1::R = √√eps(R),
     η2::R = R(0.9),
     α::R = 1 / eps(R),
-    ν::R = 1.0e-3,
+    ν::R = R(1.0e-3),
     γ::R = R(3),
     θ::R = R(1e-3),
     β::R = 1 / eps(R),

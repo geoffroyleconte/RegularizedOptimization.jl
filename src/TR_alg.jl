@@ -45,7 +45,7 @@ The Hessian is accessed as an abstract operator and need not be the exact Hessia
 * `Complex_hist`: an array with the history of number of inner iterations.
 """
 function TR(
-  f::AbstractNLPModel,
+  f::AbstractNLPModel{R},
   h::H,
   χ::X,
   options::ROSolverOptions;
@@ -54,7 +54,7 @@ function TR(
   subsolver = R2,
   subsolver_options = ROSolverOptions(ϵa = options.ϵa),
   selected::AbstractVector{<:Integer} = 1:(f.meta.nvar),
-) where {H, X}
+) where {H, X, R <: Real}
   start_time = time()
   elapsed_time = 0.0
   # initialize passed options
@@ -117,11 +117,11 @@ function TR(
   Complex_hist = zeros(Int, maxIter)
   if verbose > 0
     #! format: off
-    @info @sprintf "%6s %8s %8s %8s %7s %7s %8s %7s %7s %7s %7s %1s" "outer" "inner" "f(x)" "h(x)" "√ξ1/√ν" "√ξ" "ρ" "Δ" "‖x‖" "‖s‖" "‖Bₖ‖" "TR"
+    @info @sprintf "%6s %8s %8s %8s %7s %7s %8s %7s %7s %7s %7s %1s" "outer" "inner" "f(x)" "h(x)" "√ξcp/√ν" "√ξ" "ρ" "Δ" "‖x‖" "‖s‖" "‖Bₖ‖" "TR"
     #! format: on
   end
 
-  local ξ1
+  local ξ1::R
   k = 0
 
   fk = obj(f, xk)
@@ -129,9 +129,9 @@ function TR(
   ∇fk⁻ = copy(∇fk)
 
   quasiNewtTest = isa(f, QuasiNewtonModel)
-  Bk = Diagonal([1.0])#hess_op(f, xk)
+  Bk = Diagonal(R[1.0])#hess_op(f, xk)
 
-  λmax = 1.0#opnorm(Bk)
+  λmax = R(1.0)#opnorm(Bk)
   α⁻¹Δk⁻¹ = 1 / (Δk * α)
   ν = 1 / (α⁻¹Δk⁻¹ + λmax * (1 + α⁻¹Δk⁻¹))
 
@@ -164,7 +164,7 @@ function TR(
     α⁻¹Δk⁻¹ = 1 / (Δk * α)
     ν = 1 / (α⁻¹Δk⁻¹ + λmax * (1 + α⁻¹Δk⁻¹))
     prox!(s, ψ, -ν * ∇fk, ν)
-    ξ1 = hk - mk1(s) + max(1, abs(hk)) * 10 * eps()
+    ξ1 = hk - mk1(s) #+ max(1, abs(hk)) * 10 * eps(R)
     ξ1 > 0 || error("TR: first prox-gradient step should produce a decrease but ξ1 = $(ξ1)")
 
     # if ξ1 ≥ 0 && k == 1
@@ -173,13 +173,13 @@ function TR(
     #   ϵ_subsolver += ϵ_increment
     # end
 
-    if sqrt(ξ1 / ν) < ϵ + sqrt(eps())
+    if sqrt(ξ1 / ν) < ϵ + sqrt(eps(R))
       # the current xk is approximately first-order stationary
       optimal = true
       continue
     end
 
-    subsolver_options.ϵa = k == 1 ? 1.0e-5 : max(ϵ_subsolver, min(1e-2, sqrt(ξ1 / ν)))
+    subsolver_options.ϵa = k == 1 ? R(1.0e-5) : max(ϵ_subsolver, min(R(1e-2), sqrt(ξ1 / ν)))
     ∆_effective = min(β * χ(s), Δk)
     (has_bounds(f) || subsolver == TRDH) ?
     set_bounds!(ψ, max.(-∆_effective, l_bound - xk), min.(∆_effective, u_bound - xk)) :
@@ -203,8 +203,8 @@ function TR(
     hkn = h(xkn[selected])
     hkn == -Inf && error("nonsmooth term is not proper")
 
-    Δobj = fk + hk - (fkn + hkn) + max(1, abs(fk + hk)) * 10 * eps()
-    ξ = hk - mk(s) + max(1, abs(hk)) * 10 * eps()
+    Δobj = fk + hk - (fkn + hkn) + max(1, abs(fk + hk)) * 10 * eps(R)
+    ξ = hk - mk(s) + max(1, abs(hk)) * 10 * eps(R)
 
     if (ξ ≤ 0 || isnan(ξ))
       error("TR: failed to compute a step: ξ = $ξ")
@@ -240,8 +240,8 @@ function TR(
       if quasiNewtTest
         push!(f, s, ∇fk - ∇fk⁻)
       end
-      Bk.diag .= k^(1/10) #hess_op(f, xk)
-      λmax = k^(1/10) #opnorm(Bk)
+      Bk.diag .= k^R(1/10) #hess_op(f, xk)
+      λmax = k^R(1/10) #opnorm(Bk)
       ∇fk⁻ .= ∇fk
     end
 
@@ -260,7 +260,7 @@ function TR(
       #! format: off
       @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k 1 fk hk sqrt(ξ1 / ν) sqrt(ξ1) "" Δk χ(xk) χ(s) λmax
       #! format: on
-      @info "TR: terminating with √ξ1/√ν = $(sqrt(ξ1 / ν))"
+      @info "TR: terminating with √ξcp/√ν = $(sqrt(ξ1 / ν))"
     end
   end
 

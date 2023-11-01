@@ -188,15 +188,15 @@ function TRDH(
   if verbose > 0
     #! format: off
     if reduce_TR
-      @info @sprintf "%6s %8s %8s %7s %7s %8s %7s %7s %7s %7s %1s" "outer" "f(x)" "h(x)" "√ξ1/√ν" "√ξ" "ρ" "Δ" "‖x‖" "‖s‖" "‖Dₖ‖" "TRDH"
+      @info @sprintf "%6s %8s %8s %7s %7s %8s %7s %7s %7s %7s %1s" "outer" "f(x)" "h(x)" "√ξcp/√ν" "√ξ" "ρ" "Δ" "‖x‖" "‖s‖" "‖Dₖ‖" "TRDH"
     else
       @info @sprintf "%6s %8s %8s %7s %8s %7s %7s %7s %7s %1s" "outer" "f(x)" "h(x)" "√ξ/√ν" "ρ" "Δ" "‖x‖" "‖s‖" "‖Dₖ‖" "TRDH"
     end
     #! format: off
   end
 
-  local ξ1
-  local ξ
+  local ξ1::R
+  local ξ::R
   k = 0
 
   fk = f(xk)
@@ -233,7 +233,7 @@ function TRDH(
       # if ξ1 ≥ 0 && k == 1
       #   ϵ += ϵr * sqrt(ξ1)  # make stopping test absolute and relative
       # end
-      if (sqrt(ξ1 / ν) < ϵ + sqrt(eps())) #(ξ1 < 0 && sqrt(-ξ1) ≤ neg_tol) || (ξ1 ≥ 0 && sqrt(ξ1) < ϵ)
+      if (sqrt(ξ1 / ν) < ϵ + sqrt(eps(R))) #(ξ1 < 0 && sqrt(-ξ1) ≤ neg_tol) || (ξ1 ≥ 0 && sqrt(ξ1) < ϵ)
         # the current xk is approximately first-order stationary
         optimal = true
         continue
@@ -264,8 +264,8 @@ function TRDH(
     hkn = h(xkn[selected])
     hkn == -Inf && error("nonsmooth term is not proper")
 
-    Δobj = fk + hk - (fkn + hkn) + max(1, abs(fk + hk)) * 10 * eps()
-    ξ = hk - mk(s) + max(1, abs(hk)) * 10 * eps()
+    Δobj = fk + hk - (fkn + hkn) + max(1, abs(fk + hk)) * 10 * eps(R)
+    ξ = hk - mk(s) + max(1, abs(hk)) * 10 * eps(R)
 
     if !reduce_TR
       if ξ ≥ 0 && k == 1
@@ -312,7 +312,7 @@ function TRDH(
       hk = hkn
       shift!(ψ, xk)
       ∇f!(∇fk, xk)
-      Dk.d .= R(k^(1/10)) # push!(Dk, s, ∇fk - ∇fk⁻) # update QN operator
+      Dk.d .= k^R(1/10) # push!(Dk, s, ∇fk - ∇fk⁻) # update QN operator
       DkNorm = norm(Dk.d, Inf)
       ∇fk⁻ .= ∇fk
     end
@@ -338,7 +338,7 @@ function TRDH(
       if reduce_TR
         @info @sprintf "%6d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k fk hk sqrt(ξ1 / ν) sqrt(ξ1) "" Δk χ(xk) χ(s) norm(Dk.d)
         #! format: on
-        @info "TRDH: terminating with √ξ1/√ν = $(sqrt(ξ1 / ν))"
+        @info "TRDH: terminating with √ξcp/√ν = $(sqrt(ξ1 / ν))"
       else
         @info @sprintf "%6d %8.1e %8.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k fk hk sqrt(ξ / ν) "" Δk χ(
           xk,
