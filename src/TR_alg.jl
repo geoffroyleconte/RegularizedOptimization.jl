@@ -261,7 +261,7 @@ function TR(
       @info @sprintf "%6d %8s %8.1e %8.1e" k "" fk hk
     elseif optimal
       #! format: off
-      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k 1 fk hk sqrt(ξ1 / ν) sqrt(ξ1) "" Δk χ(xk) χ(s) λmax
+      @info @sprintf "%6d %8d %8.1e %8.1e %7.1e %7s %8s %7.1e %7.1e %7.1e %7.1e" k 1 fk hk sqrt(ξ1 / ν) "" "" Δk χ(xk) χ(s) λmax
       #! format: on
       @info "TR: terminating with √ξcp/√ν = $(sqrt(ξ1 / ν))"
     end
