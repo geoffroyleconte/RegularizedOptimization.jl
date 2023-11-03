@@ -48,7 +48,8 @@ function TR(
   f::AbstractNLPModel{R},
   h::H,
   χ::X,
-  options::ROSolverOptions;
+  options::ROSolverOptions,
+  p::R;
   x0::AbstractVector = f.meta.x0,
   subsolver_logger::Logging.AbstractLogger = Logging.NullLogger(),
   subsolver = R2,
@@ -189,6 +190,8 @@ function TR(
     s, iter, outdict = with_logger(subsolver_logger) do
       subsolver(φ, ∇φ!, ψ, subsolver_options, s; Bk = Bk)
     end
+    s = .-∇fk ./ λmax # compute explicit solution in the smooth case
+    @assert norm(s) ≤ Δk
     # restore initial values of subsolver_options here so that it is not modified
     # if there is an error
     subsolver_options.ν = ν_subsolver
@@ -240,8 +243,8 @@ function TR(
       if quasiNewtTest
         push!(f, s, ∇fk - ∇fk⁻)
       end
-      Bk.diag .= k^R(1/10) #hess_op(f, xk)
-      λmax = k^R(1/10) #opnorm(Bk)
+      Bk.diag .= k^p #hess_op(f, xk)
+      λmax = k^p #opnorm(Bk)
       ∇fk⁻ .= ∇fk
     end
 

@@ -51,7 +51,8 @@ function TRDH(
   nlp::AbstractNLPModel{R},
   h,
   χ,
-  options::ROSolverOptions{R};
+  options::ROSolverOptions{R},
+  p::R;
   kwargs...,
 ) where {R <: Real}
   kwargs_dict = Dict(kwargs...)
@@ -61,7 +62,8 @@ function TRDH(
     (g, x) -> grad!(nlp, x, g),
     h,
     options,
-    x0;
+    x0,
+    p;
     χ = χ,
     l_bound = nlp.meta.lvar,
     u_bound = nlp.meta.uvar,
@@ -98,7 +100,8 @@ function TRDH(
   ∇f!::G,
   h::H,
   options::ROSolverOptions{R},
-  x0::AbstractVector{R};
+  x0::AbstractVector{R},
+  p::R;
   χ::X = NormLinf(one(R)),
   selected::AbstractVector{<:Integer} = 1:length(x0),
   Bk = (one(R) / options.ν) * I,
@@ -203,10 +206,11 @@ function TRDH(
   ∇fk = similar(xk)
   ∇f!(∇fk, xk)
   ∇fk⁻ = copy(∇fk)
-  Dk = spectral ? SpectralGradient(hess_init_val, length(xk)) :
-    ((Bk isa UniformScaling) ? DiagonalQN(fill!(similar(xk), hess_init_val), psb) : DiagonalQN(diag(Bk), psb))
-  Dk.d .= 1.0
-  DkNorm = norm(Dk.d, Inf)
+  # Dk = spectral ? SpectralGradient(hess_init_val, length(xk)) :
+  #   ((Bk isa UniformScaling) ? DiagonalQN(fill!(similar(xk), hess_init_val), psb) : DiagonalQN(diag(Bk), psb))
+  # Dk.d .= 1.0
+  Dk = Diagonal(R[1.0])
+  DkNorm = R(1.0) # norm(Dk.d, Inf)
   # νInv = (DkNorm + one(R) / (α * Δk))
   α⁻¹Δk⁻¹ = 1 / (α * Δk)
   ν = 1 / (α⁻¹Δk⁻¹ + DkNorm * (1 + α⁻¹Δk⁻¹))
@@ -252,10 +256,10 @@ function TRDH(
     end
 
     # model with diagonal hessian 
-    φ(d) = ∇fk' * d + (d' * (Dk.d .* d)) / 2
+    φ(d) = ∇fk' * d + (d' * (Dk.diag .* d)) / 2
     mk(d) = φ(d) + ψ(d)
 
-    iprox!(s, ψ, ∇fk, Dk)
+    iprox!(s, ψ, ∇fk, Dk.diag)
     Complex_hist[k] += 1
 
     sNorm = χ(s)
@@ -290,9 +294,9 @@ function TRDH(
     if (verbose > 0) && (k % ptf == 0)
       #! format: off
       if reduce_TR
-        @info @sprintf "%6d %8.1e %8.1e %7.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k fk hk sqrt(ξ1 / ν) sqrt(ξ) ρk Δk χ(xk) sNorm norm(Dk.d) TR_stat
+        @info @sprintf "%6d %8.1e %8.1e %7.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k fk hk sqrt(ξ1 / ν) sqrt(ξ) ρk Δk χ(xk) sNorm norm(Dk.diag) TR_stat
       else
-        @info @sprintf "%6d %8.1e %8.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k fk hk sqrt(ξ / ν) ρk Δk χ(xk) sNorm norm(Dk.d) TR_stat
+        @info @sprintf "%6d %8.1e %8.1e %7.1e %8.1e %7.1e %7.1e %7.1e %7.1e %1s" k fk hk sqrt(ξ / ν) ρk Δk χ(xk) sNorm norm(Dk.diag) TR_stat
       end
       #! format: on
     end
@@ -312,8 +316,8 @@ function TRDH(
       hk = hkn
       shift!(ψ, xk)
       ∇f!(∇fk, xk)
-      Dk.d .= k^R(1/10) # push!(Dk, s, ∇fk - ∇fk⁻) # update QN operator
-      DkNorm = norm(Dk.d, Inf)
+      Dk.diag .= k^p # push!(Dk, s, ∇fk - ∇fk⁻) # update QN operator
+      DkNorm = k^p # norm(Dk.d, Inf)
       ∇fk⁻ .= ∇fk
     end
 
@@ -336,13 +340,13 @@ function TRDH(
     elseif optimal
       #! format: off
       if reduce_TR
-        @info @sprintf "%6d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k fk hk sqrt(ξ1 / ν) sqrt(ξ1) "" Δk χ(xk) χ(s) norm(Dk.d)
+        @info @sprintf "%6d %8.1e %8.1e %7.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k fk hk sqrt(ξ1 / ν) sqrt(ξ1) "" Δk χ(xk) χ(s) norm(Dk.diag)
         #! format: on
         @info "TRDH: terminating with √ξcp/√ν = $(sqrt(ξ1 / ν))"
       else
         @info @sprintf "%6d %8.1e %8.1e %7.1e %8s %7.1e %7.1e %7.1e %7.1e" k fk hk sqrt(ξ / ν) "" Δk χ(
           xk,
-        ) χ(s) norm(Dk.d)
+        ) χ(s) norm(Dk.diag)
         @info "TRDH: terminating with √ξ/√ν = $(sqrt(ξ / ν))"
       end
     end
