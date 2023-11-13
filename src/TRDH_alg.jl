@@ -112,6 +112,7 @@ function TRDH(
   ϵ = options.ϵa
   ϵr = options.ϵr
   Δk = options.Δk
+  Δmax = options.Δmax
   neg_tol = options.neg_tol
   verbose = options.verbose
   maxIter = options.maxIter
@@ -303,7 +304,7 @@ function TRDH(
 
     if η2 ≤ ρk < Inf
       # Δk = max(Δk, γ * sNorm)
-      Δk = γ * Δk
+      Δk = min(γ * Δk, Δmax)
       !has_bnds && set_radius!(ψ, Δk)
     end
 

@@ -5,6 +5,7 @@ mutable struct ROSolverOptions{R}
   ϵr::R  # relative stopping tolerance
   neg_tol::R # tolerance when ξ < 0
   Δk::R  # trust region radius
+  Δmax::R  # max trust region radius
   verbose::Int  # print every so often
   maxIter::Int  # maximum amount of inner iterations
   maxTime::Float64 #maximum time allotted to the algorithm in s
@@ -25,6 +26,7 @@ mutable struct ROSolverOptions{R}
     ϵr::R = √eps(R),
     neg_tol::R = eps(R)^(1 / R(3)),
     Δk::R = one(R),
+    Δmax::R = 1 / sqrt(eps(R)),
     verbose::Int = 0,
     maxIter::Int = 10000,
     maxTime::Float64 = 3600.0,
@@ -44,6 +46,7 @@ mutable struct ROSolverOptions{R}
     @assert ϵr ≥ 0
     @assert neg_tol ≥ 0
     @assert Δk > 0
+    @assert Δmax > Δk
     @assert verbose ≥ 0
     @assert maxIter ≥ 0
     @assert maxTime ≥ 0
@@ -59,6 +62,7 @@ mutable struct ROSolverOptions{R}
       ϵr,
       neg_tol,
       Δk,
+      Δmax,
       verbose,
       maxIter,
       maxTime,

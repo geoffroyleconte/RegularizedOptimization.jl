@@ -63,6 +63,7 @@ function TR(
   ϵ_subsolver = subsolver_options.ϵa
   ϵr = options.ϵr
   Δk = options.Δk
+  Δmax = options.Δmax
   verbose = options.verbose
   maxIter = options.maxIter
   maxTime = options.maxTime
@@ -225,7 +226,7 @@ function TR(
 
     if η2 ≤ ρk < Inf
       # Δk = max(Δk, γ * sNorm)
-      Δk = γ * Δk
+      Δk = min(γ * Δk, Δmax)
       !(has_bounds(f) || subsolver == TRDH) && set_radius!(ψ, Δk)
     end
 
